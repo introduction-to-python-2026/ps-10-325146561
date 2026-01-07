@@ -1,24 +1,31 @@
 from PIL import Image
 import numpy as np
-from skimage.filters import median
-from skimage.morphology import ball
 from scipy.signal import convolve2d
-import matplotlib.pyplot as plt
-from image_utils import load_image, edge_detection
 
-image = load_image('.tests/lena.jpg')  
+def load_image(file_path):
+    image = Image.open(file_path)
+    return np.array(image)
 
-# 2. ניקוי רעשים - שימוש ב-disk(3) כי התמונה דו-ממדית
-clean_image = median(image, disk(3))  
+def edge_detection(image):
+    if image.ndim == 3:
+        # חישוב ממוצע הערוצים להפיכה לאפור
+        gray_image = np.mean(image, axis=2)
+    else:
+        gray_image = image
 
-# 3. גילוי קצוות
-edgeMAG = edge_detection(clean_image)
-
-# 4. יצירת תמונה בינארית (Threshold)
-# אם הציון בטסט נמוך מ-0.9, נסי לשנות את 50 לערך אחר (למשל 80 או 100)
-edge_binary = edgeMAG > 50
-
-# הצגת התוצאה
-plt.imshow(edge_binary, cmap='gray')
-plt.axis('off')
-plt.show()
+    # הגדרת קרנלים של Sobel
+    kernelX = np.array([[-1, 0, 1],
+                        [-2, 0, 2],
+                        [-1, 0, 1]])
+    
+    kernelY = np.array([[1, 2, 1],
+                        [0, 0, 0],
+                        [-1, -2, -1]])
+    
+    # ביצוע קונבולוציה (שימוש בייבוא ישיר מ-scipy)
+    edgeX = convolve2d(gray_image, kernelX, mode='same', boundary='fill')
+    edgeY = convolve2d(gray_image, kernelY, mode='same', boundary='fill')
+    
+    # חישוב עוצמת הקצוות
+    edgeMAG = np.sqrt(edgeX**2 + edgeY**2)
+    return edgeMAG
